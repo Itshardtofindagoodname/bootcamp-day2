@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SendHorizontal } from 'lucide-react';
+import axios from 'axios';
 
 const CherryBlossom = ({ style }) => (
   <div 
@@ -17,13 +18,13 @@ const CherryBlossom = ({ style }) => (
 const App = () => {
   const [messages, setMessages] = useState([
     { id: 1, text: "Welcome to the Dojo", sender: 'bot' }
-  ]);
+  ]); // messages array -> previous + current
   const [input, setInput] = useState('');
   const [petals, setPetals] = useState([]);
   const messagesEndRef = useRef(null);
 
   const generatePetals = () => {
-    const newPetals = Array.from({ length: 50 }).map((_, index) => ({
+    const newPetals = Array.from({ length: 25 }).map((_, index) => ({
       id: Date.now() + index,
       left: Math.random() * 100,
       animationDuration: 10 + Math.random() * 10,
@@ -37,7 +38,37 @@ const App = () => {
   }, []);
 
 const handleSend = async () => {
-  console.log('code kaun likhega?');
+  if(input.trim()){
+    const userMessage = {
+      id: messages.length + 1,
+      text: input, //Heyyy
+      sender: 'user',
+    };
+
+    setMessages([...messages, userMessage]);
+    setInput('');
+
+    try{
+      const response = await axios.post(`http://127.0.0.1:8000/query`, null, {
+        params: { request: input},
+        headers: {
+          accept: 'application/json',
+        }
+      });
+      const fullResponse = response.data.response; // Hi
+      let tempText = ''; // Hi
+      const botMessage = {
+        id : messages.length + 2,
+        text : '',
+        sender : 'bot',
+      };
+      setMessages((prev)=>[...prev, botMessage]);
+
+      fullResponse.split('').forEach((char, index) => {setTimeout(()=>{tempText += char;setMessages((prev)=>prev.map((msg)=>msg.id===botMessage.id?{...msg,text: tempText}:msg));}, index* 50);});
+    } catch (error){
+      console.error(error);
+    }
+  }
 };
 
   return (
@@ -70,7 +101,7 @@ const handleSend = async () => {
               key={msg.id} 
               className={`p-3 rounded-xl max-w-[80%] 
                 ${msg.sender === 'bot' 
-                  ? 'bg-pink-600/50 text-white self-start' 
+                  ? 'bg-pink-600 text-white self-start' 
                   : 'bg-pink-200/50 text-black self-end ml-auto'
                 }
                 transform transition-all duration-300 ease-in-out animate-fadeIn
